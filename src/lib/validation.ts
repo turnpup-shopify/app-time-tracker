@@ -72,3 +72,8 @@ export function zodMessage(err: z.ZodError): string {
   const path = issue.path.join(".");
   return path ? `${path}: ${issue.message}` : issue.message;
 }
+
+export const timerStartSchema = z.object({
+  bucketId: z.uuid(),
+  clientId: z.uuid().optional(),
+});

@@ -54,7 +54,7 @@ export function listBuckets(db: Db, userId: string): Promise<Bucket[]> {
     .orderBy(asc(buckets.sort), asc(buckets.createdAt));
 }
 
-async function getBucket(db: Db, userId: string, id: string): Promise<Bucket> {
+export async function getBucket(db: Db, userId: string, id: string): Promise<Bucket> {
   const [b] = await db
     .select()
     .from(buckets)

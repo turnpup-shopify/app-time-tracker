@@ -79,7 +79,7 @@ export function EntrySheet({
           </div>
         </fieldset>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className={`mt-4 grid gap-3 ${entry.endAt ? "grid-cols-2" : "grid-cols-1"}`}>
           <label className="text-sm text-ink-2">
             Start
             <input
@@ -90,6 +90,7 @@ export function EntrySheet({
               className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-fill px-3 text-ink"
             />
           </label>
+          {entry.endAt && (
           <label className="text-sm text-ink-2">
             End
             <input
@@ -100,6 +101,7 @@ export function EntrySheet({
               className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-fill px-3 text-ink"
             />
           </label>
+          )}
         </div>
 
         <label className="mt-4 block text-sm text-ink-2">

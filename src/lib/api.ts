@@ -5,12 +5,14 @@
 import type { Db } from "@/db";
 import { handle, json } from "./http";
 import * as svc from "./service";
+import * as timer from "./timer";
 import {
   bucketCreateSchema,
   bucketPatchSchema,
   entryCreateSchema,
   entryPatchSchema,
   rangeSchema,
+  timerStartSchema,
 } from "./validation";
 import { z } from "zod";
 
@@ -64,3 +66,15 @@ export const deleteBucket = (db: Db, userId: string, id: string) =>
     await svc.deleteBucket(db, userId, idSchema.parse(id));
     return json({ ok: true });
   });
+
+export const getTimer = (db: Db, userId: string) =>
+  handle(async () => json({ timer: await timer.getRunningTimer(db, userId) }));
+
+export const startTimer = (db: Db, userId: string, body: unknown, now = new Date()) =>
+  handle(async () => {
+    const input = timerStartSchema.parse(body);
+    return json(await timer.startTimer(db, userId, input, now), 201);
+  });
+
+export const stopTimer = (db: Db, userId: string, now = new Date()) =>
+  handle(async () => json(await timer.stopTimer(db, userId, now)));

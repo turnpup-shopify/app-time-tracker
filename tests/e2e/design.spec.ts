@@ -25,6 +25,20 @@ for (const scheme of ["dark", "light"] as const) {
       });
     }
 
+    test("a running timer has zero serious issues", async ({ page }) => {
+      await page.goto("/timer");
+      await page.getByRole("radio", { name: "Health" }).click();
+      await page.getByRole("button", { name: "Start" }).click();
+      await page.getByTestId("timer-clock").waitFor();
+      await page.waitForTimeout(400);
+      expect(await axe(page)).toEqual([]);
+      await page.goto("/");
+      await page.getByTestId("running-pill").waitFor();
+      await page.waitForTimeout(400);
+      expect(await axe(page)).toEqual([]);
+      await page.request.post("/api/timer/stop");
+    });
+
     test("an open bucket card and the edit sheet have zero serious issues", async ({ page }) => {
       await page.goto("/");
       await page.getByTestId("bucket-Health").getByRole("button", { name: /Health/ }).click();

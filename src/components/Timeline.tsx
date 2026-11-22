@@ -98,6 +98,14 @@ function Row({
             {fmtTime(entry.startAt)} to {entry.endAt ? fmtTime(entry.endAt) : "now"}
             {entry.note ? ` · ${entry.note}` : ""}
           </span>
+          {entry.offline && (
+            <span data-testid="offline-badge" className="mt-1 inline-block rounded-full bg-fill-3 px-2 py-0.5 text-xs font-medium">
+              Saved offline
+            </span>
+          )}
+          {!entry.endAt && (
+            <span className="mt-1 inline-block rounded-full bg-fill-3 px-2 py-0.5 text-xs font-medium">Running</span>
+          )}
         </span>
         <span className="tabular text-ink-2">{minutes ? formatMinutes(minutes) : ""}</span>
       </button>

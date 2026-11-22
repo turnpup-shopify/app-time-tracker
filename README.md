@@ -2,7 +2,7 @@
 
 Phone first time tracker. Log a block of time in two taps and see where every day went.
 
-The full spec lives in the "Time Tracker App Spec" doc. Phases 1 and 2 are done. Core logging, then glass UI and motion.
+The full spec lives in the "Time Tracker App Spec" doc. Phases 1 to 3 are done. Core logging, glass UI and motion, then the timer and offline logging.
 
 ## What ships in Phase 1
 
@@ -26,6 +26,14 @@ Timer, Reports, and Calendar show a "ships in phase N" card for now.
 - Reduced motion turns off scale, fly, and drift. Only fades remain
 - Installable. Web app manifest, app icons, and Apple touch icon
 
+## Phase 3. Timer and offline
+
+- Live timer. Pick a bucket, tap Start. The start time lives in the database, so it survives closing the app, a reload, or a second phone
+- Switching buckets stops and logs the running timer. Under 1 minute is thrown away with a toast
+- A timer left running past 24 hours is capped at 24 hours when stopped
+- Today shows a "Timer running" pill and grows the ring while it runs
+- Taps made offline are saved on the phone with a "Saved offline" badge. They sync on reconnect, on app open, and every 15 seconds. Client ids stop duplicates
+
 ## Tests
 
 | Spec ID | Where |
@@ -34,6 +42,8 @@ Timer, Reports, and Calendar show a "ships in phase N" card for now.
 | T18 | `tests/unit/buckets.test.ts` and `tests/e2e/today.spec.ts` |
 | T21, T23 | `tests/unit/security.test.ts` |
 | T22 | `tests/unit/security.test.ts` and `tests/e2e/today.spec.ts` |
+| T05 to T07 | `tests/unit/timer.test.ts` and `tests/e2e/timer.spec.ts` |
+| T08 | `tests/e2e/timer.spec.ts` |
 | T24, T25 | `tests/e2e/design.spec.ts` |
 
 Unit and API tests run against a real Postgres (PGlite, in memory) with the real migrations.

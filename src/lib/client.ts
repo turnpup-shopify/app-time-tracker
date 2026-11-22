@@ -16,8 +16,25 @@ export type ClientEntry = {
   endAt: Date | null;
   source: "manual" | "timer" | "calendar";
   note: string | null;
+  clientId?: string | null;
+  /** Waiting for the server response. */
   pending?: boolean;
+  /** Saved on this phone while offline. Syncs when back online. */
+  offline?: boolean;
 };
+
+export type StopResult =
+  | { status: "logged"; entry: ClientEntry; capped: boolean }
+  | { status: "discarded"; entry: ClientEntry }
+  | { status: "none" };
+
+type RawStop =
+  | { status: "logged"; entry: RawEntry; capped: boolean }
+  | { status: "discarded"; entry: RawEntry }
+  | { status: "none" };
+
+const parseStop = (r: RawStop): StopResult =>
+  r.status === "none" ? r : ({ ...r, entry: parseEntry(r.entry) } as StopResult);
 
 type RawEntry = Omit<ClientEntry, "startAt" | "endAt"> & { startAt: string; endAt: string | null };
 
@@ -97,6 +114,16 @@ export const api = {
       }),
     }).then((r) => parseEntry(r.entry)),
   deleteEntry: (id: string) => call(`/api/entries/${id}`, { method: "DELETE" }),
+  timer: () =>
+    call<{ timer: RawEntry | null }>("/api/timer").then((r) =>
+      r.timer ? parseEntry(r.timer) : null,
+    ),
+  startTimer: (bucketId: string, clientId: string) =>
+    call<{ timer: RawEntry; stopped: RawStop }>("/api/timer/start", {
+      method: "POST",
+      body: JSON.stringify({ bucketId, clientId }),
+    }).then((r) => ({ timer: parseEntry(r.timer), stopped: parseStop(r.stopped) })),
+  stopTimer: () => call<RawStop>("/api/timer/stop", { method: "POST" }).then(parseStop),
   restoreEntry: (id: string) =>
     call<{ entry: RawEntry }>(`/api/entries/${id}/restore`, { method: "POST" }).then((r) =>
       parseEntry(r.entry),
@@ -117,6 +144,16 @@ export function haptic() {
   } catch {
     /* not supported */
   }
+}
+
+/** "1:02:03" or "2:03" for a running clock. */
+export function fmtClock(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = String(m).padStart(h ? 2 : 1, "0");
+  return `${h ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
 }
 
 export const fmtTime = (d: Date) =>

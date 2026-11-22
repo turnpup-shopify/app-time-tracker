@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QUICK_DURATIONS, UNDO_MS } from "@/lib/defaults";
 import { formatMinutes, localDayRange, minutesWithin, quickLogRange } from "@/lib/time";
 import {
   api,
+  ApiError,
   atTime,
+  fmtClock,
   haptic,
   newClientId,
   toTimeInput,
@@ -13,6 +16,8 @@ import {
   type ClientEntry,
 } from "@/lib/client";
 import { flyDot } from "@/lib/motion";
+import { dequeue, enqueue, readQueue, type QueuedEntry } from "@/lib/offline";
+import { useNow } from "@/lib/useNow";
 import { DayRing } from "./DayRing";
 import { EntrySheet } from "./EntrySheet";
 import { Timeline } from "./Timeline";
@@ -21,6 +26,20 @@ import { Toast, type ToastState } from "./Toast";
 type EndedAt = { kind: "now" } | { kind: "ago"; minutes: number } | { kind: "at"; time: string };
 
 const DOUBLE_TAP_MS = 800;
+const FLUSH_EVERY_MS = 15_000;
+
+const tempIdFor = (clientId: string) => `tmp-${clientId}`;
+
+const fromQueue = (q: QueuedEntry): ClientEntry => ({
+  id: tempIdFor(q.clientId),
+  clientId: q.clientId,
+  bucketId: q.bucketId,
+  startAt: new Date(q.startAt),
+  endAt: new Date(q.endAt),
+  source: "manual",
+  note: q.note ?? null,
+  offline: true,
+});
 
 export function TodayView() {
   const [day] = useState(() => localDayRange(new Date()));
@@ -36,6 +55,7 @@ export function TodayView() {
   const [editing, setEditing] = useState<ClientEntry | null>(null);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
   const toastId = useRef(0);
+  const flushing = useRef(false);
 
   const showToast = useCallback((t: Omit<NonNullable<ToastState>, "id">) => {
     toastId.current += 1;
@@ -43,16 +63,69 @@ export function TodayView() {
   }, []);
   const closeToast = useCallback(() => setToast(null), []);
 
+  /** Sends entries saved offline. Safe to call often. Client ids stop duplicates. */
+  const flushQueue = useCallback(async () => {
+    if (flushing.current) return;
+    const queue = readQueue();
+    if (!queue.length) return;
+    flushing.current = true;
+    let synced = 0;
+    try {
+      for (const item of queue) {
+        try {
+          const saved = await api.createEntry({
+            bucketId: item.bucketId,
+            startAt: new Date(item.startAt),
+            endAt: new Date(item.endAt),
+            note: item.note,
+            clientId: item.clientId,
+          });
+          dequeue(item.clientId);
+          synced++;
+          setEntries((xs) => xs.map((x) => (x.id === tempIdFor(item.clientId) ? saved : x)));
+        } catch (err) {
+          // Still offline or the server is struggling. Keep it and try later.
+          if (err instanceof ApiError && (err.status === 0 || err.status === 401 || err.status >= 500)) {
+            break;
+          }
+          // The server said no (for example the bucket was deleted). Drop it and say so.
+          dequeue(item.clientId);
+          setEntries((xs) => xs.filter((x) => x.id !== tempIdFor(item.clientId)));
+          showToast({ tone: "error", message: `An offline entry couldn't be saved. ${(err as Error).message}` });
+        }
+      }
+    } finally {
+      flushing.current = false;
+    }
+    if (synced) {
+      showToast({
+        message: `Back online. ${synced} offline ${synced === 1 ? "entry" : "entries"} synced.`,
+        ms: 3000,
+      });
+    }
+  }, [showToast]);
+
   const load = useCallback(async () => {
     setLoadError(null);
     try {
       const [b, e] = await Promise.all([api.buckets(), api.entries(day.from, day.to)]);
+      // Show entries still waiting to sync. Drop any the server already has.
+      const onServer = new Set(e.map((x) => x.clientId).filter(Boolean));
+      const waiting = readQueue().filter((q) => {
+        if (!onServer.has(q.clientId)) return true;
+        dequeue(q.clientId);
+        return false;
+      });
+      const inDay = waiting
+        .map(fromQueue)
+        .filter((x) => x.startAt < day.to && (x.endAt ?? x.startAt) > day.from);
       setBuckets(b);
-      setEntries(e);
+      setEntries([...e, ...inDay]);
+      void flushQueue();
     } catch (err) {
       setLoadError((err as Error).message);
     }
-  }, [day]);
+  }, [day, flushQueue]);
 
   useEffect(() => {
     // Initial data load for the day.
@@ -60,21 +133,38 @@ export function TodayView() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const onOnline = () => void flushQueue();
+    window.addEventListener("online", onOnline);
+    const id = setInterval(onOnline, FLUSH_EVERY_MS);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      clearInterval(id);
+    };
+  }, [flushQueue]);
+
+  const running = entries.find((e) => !e.endAt) ?? null;
+  const now = useNow(1000, !!running);
+
   const bucketById = useMemo(
     () => new Map((buckets ?? []).map((b) => [b.id, b])),
     [buckets],
   );
   const active = useMemo(() => (buckets ?? []).filter((b) => !b.archivedAt), [buckets]);
 
+  // A running timer grows the ring. Recomputing once a minute is enough.
+  const minuteTick = running && now ? Math.floor(now / 60_000) : 0;
   const slices = useMemo(() => {
+    const at = minuteTick ? new Date(minuteTick * 60_000) : undefined;
     const per = new Map<string, number>();
     for (const e of entries) {
-      per.set(e.bucketId, (per.get(e.bucketId) ?? 0) + minutesWithin(e, day.from, day.to));
+      const m = minutesWithin(e, day.from, day.to, at);
+      per.set(e.bucketId, (per.get(e.bucketId) ?? 0) + m);
     }
     return (buckets ?? [])
       .filter((b) => per.get(b.id))
       .map((b) => ({ id: b.id, color: b.color, minutes: per.get(b.id)! }));
-  }, [entries, buckets, day]);
+  }, [entries, buckets, day, minuteTick]);
 
   function resolveEnd(): Date {
     const now = new Date();
@@ -98,6 +188,7 @@ export function TodayView() {
             ...xs,
             {
               id: tempId,
+              clientId,
               bucketId: bucket.id,
               ...range,
               source: "manual",
@@ -121,6 +212,34 @@ export function TodayView() {
         onAction: () => void undoLog(saved),
       });
     } catch (err) {
+      if (err instanceof ApiError && err.status === 0) {
+        // No connection. Keep it on this phone and sync later.
+        enqueue({
+          clientId,
+          bucketId: bucket.id,
+          startAt: range.startAt.toISOString(),
+          endAt: range.endAt.toISOString(),
+          note: noteText || undefined,
+          queuedAt: new Date().toISOString(),
+        });
+        const offlineEntry: ClientEntry = {
+          id: tempId,
+          clientId,
+          bucketId: bucket.id,
+          ...range,
+          source: "manual",
+          note: noteText || null,
+          offline: true,
+        };
+        setEntries((xs) => xs.map((x) => (x.id === tempId ? offlineEntry : x)));
+        showToast({
+          message: `Saved offline. ${formatMinutes(minutes)} of ${bucket.name} syncs when you're back online.`,
+          actionLabel: "Undo",
+          ms: UNDO_MS,
+          onAction: () => void undoLog(offlineEntry),
+        });
+        return;
+      }
       setEntries((xs) => xs.filter((x) => x.id !== tempId));
       showToast({
         tone: "error",
@@ -157,6 +276,10 @@ export function TodayView() {
 
   async function undoLog(entry: ClientEntry) {
     setEntries((xs) => xs.filter((x) => x.id !== entry.id));
+    if (entry.offline && entry.clientId) {
+      dequeue(entry.clientId);
+      return;
+    }
     try {
       await api.deleteEntry(entry.id);
     } catch (err) {
@@ -167,6 +290,11 @@ export function TodayView() {
 
   async function remove(entry: ClientEntry) {
     if (entry.pending) return;
+    if (entry.offline) {
+      await undoLog(entry);
+      showToast({ message: "Removed the offline entry.", ms: 2500 });
+      return;
+    }
     setEntries((xs) => xs.filter((x) => x.id !== entry.id));
     try {
       await api.deleteEntry(entry.id);
@@ -238,6 +366,20 @@ export function TodayView() {
           {day.from.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
         </span>
       </header>
+
+      {running && (
+        <Link
+          href="/timer"
+          data-testid="running-pill"
+          className="glass press mb-4 flex min-h-12 items-center gap-2 px-4 text-sm"
+        >
+          <span aria-hidden className="h-2.5 w-2.5 animate-pulse rounded-full" style={{ background: bucketById.get(running.bucketId)?.color }} />
+          <span className="flex-1">
+            Timer running. {bucketById.get(running.bucketId)?.name ?? "Entry"}
+          </span>
+          <span className="tabular font-semibold">{now ? fmtClock(now - running.startAt.getTime()) : ""}</span>
+        </Link>
+      )}
 
       <DayRing slices={slices} />
 
@@ -319,7 +461,18 @@ export function TodayView() {
       </div>
 
       <h2 className="mt-8 mb-3 text-sm font-medium uppercase tracking-wide text-ink-2">Timeline</h2>
-      <Timeline entries={sorted} buckets={bucketById} onDelete={remove} onEdit={setEditing} />
+      <Timeline
+        entries={sorted}
+        buckets={bucketById}
+        onDelete={remove}
+        onEdit={(e) => {
+          if (e.offline || e.pending) {
+            showToast({ message: "This entry is still syncing. You can edit it once it's saved.", ms: 3000 });
+            return;
+          }
+          setEditing(e);
+        }}
+      />
 
       {editing && (
         <EntrySheet
