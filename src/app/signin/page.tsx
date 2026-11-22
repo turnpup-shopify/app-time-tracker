@@ -19,7 +19,7 @@ export default async function SignInPage() {
       >
         <button
           type="submit"
-          className="glass min-h-12 w-full px-5 font-medium text-ink active:scale-[0.98]"
+          className="glass min-h-12 w-full px-5 font-medium text-ink press"
         >
           Continue with Google
         </button>

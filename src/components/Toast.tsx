@@ -24,7 +24,7 @@ export function Toast({ toast, onClose }: { toast: ToastState; onClose: () => vo
       key={toast.id}
       role="status"
       aria-live="polite"
-      className="toast-in fixed inset-x-4 bottom-[calc(80px+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-glass-border bg-[#1a1e2b]/95 px-4 py-3 shadow-xl backdrop-blur-xl"
+      className="toast-in fixed inset-x-4 bottom-[calc(80px+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-glass-border bg-surface/95 px-4 py-3 shadow-xl backdrop-blur-xl"
     >
       <span className={`flex-1 ${toast.tone === "error" ? "text-danger" : "text-ink"}`}>
         {toast.message}
@@ -36,7 +36,7 @@ export function Toast({ toast, onClose }: { toast: ToastState; onClose: () => vo
             toast.onAction?.();
             onClose();
           }}
-          className="min-h-12 min-w-12 rounded-xl px-3 font-semibold text-[#8fb0ff]"
+          className="min-h-12 min-w-12 rounded-xl px-3 font-semibold text-accent-ink"
         >
           {toast.actionLabel}
         </button>

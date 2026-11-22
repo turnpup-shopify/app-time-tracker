@@ -2,7 +2,7 @@
 
 Phone first time tracker. Log a block of time in two taps and see where every day went.
 
-The full spec lives in the "Time Tracker App Spec" doc. This repo is **Phase 1. Core logging.**
+The full spec lives in the "Time Tracker App Spec" doc. Phases 1 and 2 are done. Core logging, then glass UI and motion.
 
 ## What ships in Phase 1
 
@@ -16,6 +16,16 @@ The full spec lives in the "Time Tracker App Spec" doc. This repo is **Phase 1. 
 
 Timer, Reports, and Calendar show a "ships in phase N" card for now.
 
+## Phase 2. Glass UI and motion
+
+- Frosted glass cards over three color blobs that drift over 40 seconds
+- Day ring slices grow in. A colored dot flies from the chip into the ring. The total rolls up
+- Card and chip press with a spring back. Every motion is under 400ms
+- Haptic tap on log where the phone supports it
+- Light theme follows the phone setting. Dark is the default
+- Reduced motion turns off scale, fly, and drift. Only fades remain
+- Installable. Web app manifest, app icons, and Apple touch icon
+
 ## Tests
 
 | Spec ID | Where |
@@ -24,6 +34,7 @@ Timer, Reports, and Calendar show a "ships in phase N" card for now.
 | T18 | `tests/unit/buckets.test.ts` and `tests/e2e/today.spec.ts` |
 | T21, T23 | `tests/unit/security.test.ts` |
 | T22 | `tests/unit/security.test.ts` and `tests/e2e/today.spec.ts` |
+| T24, T25 | `tests/e2e/design.spec.ts` |
 
 Unit and API tests run against a real Postgres (PGlite, in memory) with the real migrations.
 E2E runs on an iPhone 14 viewport and desktop Chrome.

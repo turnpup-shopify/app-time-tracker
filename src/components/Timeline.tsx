@@ -49,8 +49,8 @@ function Row({
     : 0;
 
   return (
-    <li className="relative overflow-hidden rounded-[20px]">
-      <div aria-hidden className="absolute inset-0 flex items-center justify-end bg-danger/80 pr-5 font-medium text-white">
+    <li className="fade-in relative overflow-hidden rounded-[20px]">
+      <div aria-hidden className="absolute inset-0 flex items-center justify-end bg-danger-bg pr-5 font-medium text-white">
         Delete
       </div>
       <button
@@ -87,7 +87,7 @@ function Row({
           onEdit(entry);
         }}
         style={{ transform: `translateX(${dx}px)`, touchAction: "pan-y" }}
-        className={`glass relative flex min-h-16 w-full items-center gap-3 rounded-[20px]! bg-[#141826]! p-4 text-left ${
+        className={`glass relative flex min-h-16 w-full items-center gap-3 rounded-[20px]! bg-surface! p-4 text-left ${
           dx === 0 ? "transition-transform" : ""
         } ${entry.pending ? "opacity-70" : ""}`}
       >

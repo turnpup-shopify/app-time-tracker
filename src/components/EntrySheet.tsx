@@ -48,14 +48,14 @@ export function EntrySheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={onClose}>
+    <div className="fade-in fixed inset-0 z-50 flex items-end bg-black/60" onClick={onClose}>
       <form
         role="dialog"
         aria-modal="true"
         aria-label="Edit entry"
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        className="mx-auto w-full max-w-md rounded-t-[24px] border border-glass-border bg-[#141826] p-5 pb-[max(20px,env(safe-area-inset-bottom))]"
+        className="sheet-in mx-auto w-full max-w-md rounded-t-[24px] border border-glass-border bg-surface p-5 pb-[max(20px,env(safe-area-inset-bottom))]"
       >
         <h2 className="text-lg font-semibold">Edit entry</h2>
 
@@ -69,7 +69,7 @@ export function EntrySheet({
                 aria-pressed={bucketId === b.id}
                 onClick={() => setBucketId(b.id)}
                 className={`flex min-h-12 items-center gap-2 rounded-full border px-4 ${
-                  bucketId === b.id ? "border-ink bg-white/15" : "border-glass-border bg-white/5"
+                  bucketId === b.id ? "border-ink bg-fill-3" : "border-glass-border bg-fill"
                 }`}
               >
                 <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: b.color }} />
@@ -87,7 +87,7 @@ export function EntrySheet({
               required
               value={start}
               onChange={(e) => setStart(e.target.value)}
-              className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-white/5 px-3 text-ink [color-scheme:dark]"
+              className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-fill px-3 text-ink"
             />
           </label>
           <label className="text-sm text-ink-2">
@@ -97,7 +97,7 @@ export function EntrySheet({
               required
               value={end}
               onChange={(e) => setEnd(e.target.value)}
-              className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-white/5 px-3 text-ink [color-scheme:dark]"
+              className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-fill px-3 text-ink"
             />
           </label>
         </div>
@@ -108,7 +108,7 @@ export function EntrySheet({
             value={note}
             maxLength={500}
             onChange={(e) => setNote(e.target.value)}
-            className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-white/5 px-3 text-ink"
+            className="mt-1 min-h-12 w-full rounded-xl border border-glass-border bg-fill px-3 text-ink"
           />
         </label>
 
@@ -122,17 +122,17 @@ export function EntrySheet({
           <button
             type="button"
             onClick={onDelete}
-            className="min-h-12 rounded-xl border border-danger/60 px-4 font-medium text-danger"
+            className="min-h-12 rounded-xl border border-danger px-4 font-medium text-danger"
           >
             Delete
           </button>
-          <button type="button" onClick={onClose} className="min-h-12 flex-1 rounded-xl bg-white/5 px-4 text-ink">
+          <button type="button" onClick={onClose} className="min-h-12 flex-1 rounded-xl bg-fill px-4 text-ink">
             Cancel
           </button>
           <button
             type="submit"
             disabled={busy}
-            className="min-h-12 flex-1 rounded-xl bg-[#4F7CFF] px-4 font-semibold text-white disabled:opacity-60"
+            className="min-h-12 flex-1 rounded-xl bg-accent px-4 font-semibold text-on-accent disabled:opacity-60"
           >
             Save
           </button>

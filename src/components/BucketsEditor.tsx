@@ -51,7 +51,7 @@ export function BucketsEditor() {
     return (
       <div className="glass mt-3 p-5">
         <p>We couldn&apos;t load your buckets. {error}</p>
-        <button type="button" onClick={() => void load()} className="mt-3 min-h-12 rounded-xl bg-white/10 px-5">
+        <button type="button" onClick={() => void load()} className="mt-3 min-h-12 rounded-xl bg-fill-2 px-5">
           Retry
         </button>
       </div>
@@ -96,14 +96,14 @@ export function BucketsEditor() {
                   if (name && name !== b.name) void run(() => api.updateBucket(b.id, { name }));
                   else e.target.value = b.name;
                 }}
-                className="min-h-12 min-w-0 flex-1 rounded-xl border border-glass-border bg-white/5 px-3 text-ink"
+                className="min-h-12 min-w-0 flex-1 rounded-xl border border-glass-border bg-fill px-3 text-ink"
               />
               <button
                 type="button"
                 aria-label={`Move ${b.name} up`}
                 disabled={i === 0}
                 onClick={() => void move(i, -1)}
-                className="min-h-12 min-w-12 rounded-xl bg-white/5 disabled:opacity-30"
+                className="min-h-12 min-w-12 rounded-xl bg-fill disabled:opacity-30"
               >
                 ↑
               </button>
@@ -112,7 +112,7 @@ export function BucketsEditor() {
                 aria-label={`Move ${b.name} down`}
                 disabled={i === buckets.length - 1}
                 onClick={() => void move(i, 1)}
-                className="min-h-12 min-w-12 rounded-xl bg-white/5 disabled:opacity-30"
+                className="min-h-12 min-w-12 rounded-xl bg-fill disabled:opacity-30"
               >
                 ↓
               </button>
@@ -123,14 +123,14 @@ export function BucketsEditor() {
                 onClick={() =>
                   void run(() => api.updateBucket(b.id, { group: b.group === "work" ? "life" : "work" }))
                 }
-                className="min-h-12 rounded-xl bg-white/5 px-4 text-ink"
+                className="min-h-12 rounded-xl bg-fill px-4 text-ink"
               >
                 Group: {b.group === "work" ? "Work" : "Life"}
               </button>
               <button
                 type="button"
                 onClick={() => void run(() => api.updateBucket(b.id, { archived: !b.archivedAt }))}
-                className="min-h-12 rounded-xl bg-white/5 px-4 text-ink"
+                className="min-h-12 rounded-xl bg-fill px-4 text-ink"
               >
                 {b.archivedAt ? "Unarchive" : "Archive"}
               </button>
@@ -184,16 +184,16 @@ function AddBucket({
         value={name}
         maxLength={24}
         onChange={(e) => setName(e.target.value)}
-        className="min-h-12 min-w-0 flex-1 rounded-xl border border-glass-border bg-white/5 px-3 text-ink placeholder:text-ink-2"
+        className="min-h-12 min-w-0 flex-1 rounded-xl border border-glass-border bg-fill px-3 text-ink placeholder:text-ink-2"
       />
       <button
         type="button"
         onClick={() => setGroup(group === "work" ? "life" : "work")}
-        className="min-h-12 rounded-xl bg-white/5 px-3 text-sm"
+        className="min-h-12 rounded-xl bg-fill px-3 text-sm"
       >
         {group === "work" ? "Work" : "Life"}
       </button>
-      <button type="submit" className="min-h-12 rounded-xl bg-[#4F7CFF] px-4 font-semibold text-white">
+      <button type="submit" className="min-h-12 rounded-xl bg-accent px-4 font-semibold text-on-accent">
         Add
       </button>
     </form>

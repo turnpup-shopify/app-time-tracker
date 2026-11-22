@@ -12,6 +12,7 @@ import {
   type ClientBucket,
   type ClientEntry,
 } from "@/lib/client";
+import { flyDot } from "@/lib/motion";
 import { DayRing } from "./DayRing";
 import { EntrySheet } from "./EntrySheet";
 import { Timeline } from "./Timeline";
@@ -132,7 +133,7 @@ export function TodayView() {
     }
   }
 
-  function log(bucket: ClientBucket, minutes: number, tapAt: number) {
+  function log(bucket: ClientBucket, minutes: number, tapAt: number, chip: Element) {
     const key = `${bucket.id}:${minutes}`;
     const now = tapAt;
     if (lastTap.current && lastTap.current.key === key && now - lastTap.current.at < DOUBLE_TAP_MS) {
@@ -141,6 +142,7 @@ export function TodayView() {
     lastTap.current = { key, at: now };
 
     haptic();
+    flyDot(chip, "day-ring", bucket.color);
     setPulse(bucket.id);
     setTimeout(() => setPulse((p) => (p === bucket.id ? null : p)), 350);
 
@@ -205,7 +207,7 @@ export function TodayView() {
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 min-h-12 rounded-xl bg-white/10 px-5 font-medium text-ink"
+          className="mt-4 min-h-12 rounded-xl bg-fill-2 px-5 font-medium text-ink"
         >
           Retry
         </button>
@@ -260,7 +262,7 @@ export function TodayView() {
                 type="button"
                 aria-expanded={isOpen}
                 onClick={() => setExpanded(isOpen ? null : b.id)}
-                className="flex min-h-24 w-full flex-col items-start justify-between p-4 text-left active:scale-[0.96] transition-transform"
+                className="press flex min-h-24 w-full flex-col items-start justify-between p-4 text-left"
               >
                 <span className="flex items-center gap-2 font-medium">
                   <span
@@ -274,14 +276,14 @@ export function TodayView() {
               </button>
 
               {isOpen && (
-                <div className="px-4 pb-4">
+                <div className="expand-in px-4 pb-4">
                   <div className="grid grid-cols-4 gap-2" role="group" aria-label={`Log ${b.name}`}>
                     {QUICK_DURATIONS.map((m) => (
                       <button
                         key={m}
                         type="button"
-                        onClick={(e) => log(b, m, e.timeStamp)}
-                        className="min-h-12 rounded-full border border-glass-border bg-white/10 font-semibold text-ink active:scale-95 transition-transform"
+                        onClick={(e) => log(b, m, e.timeStamp, e.currentTarget)}
+                        className="min-h-12 rounded-full border border-glass-border bg-fill-2 font-semibold text-ink press"
                       >
                         {formatMinutes(m)}
                       </button>
@@ -298,7 +300,7 @@ export function TodayView() {
                       maxLength={500}
                       placeholder="Note (optional)"
                       aria-label="Note"
-                      className="mt-3 min-h-12 w-full rounded-xl border border-glass-border bg-white/5 px-3 text-ink placeholder:text-ink-2"
+                      className="mt-3 min-h-12 w-full rounded-xl border border-glass-border bg-fill px-3 text-ink placeholder:text-ink-2"
                     />
                   ) : (
                     <button
@@ -362,7 +364,7 @@ function EndedAtPicker({
           aria-pressed={same(value, o.v)}
           onClick={() => onChange(o.v)}
           className={`min-h-10 rounded-full px-3 ${
-            same(value, o.v) ? "bg-white/20 text-ink" : "bg-white/5 text-ink-2"
+            same(value, o.v) ? "bg-fill-3 text-ink" : "bg-fill text-ink-2"
           }`}
         >
           {o.label}
@@ -378,8 +380,8 @@ function EndedAtPicker({
         onFocus={(e) => {
           if (!e.target.value) onChange({ kind: "at", time: toTimeInput(new Date()) });
         }}
-        className={`min-h-10 rounded-full px-3 text-ink [color-scheme:dark] ${
-          value.kind === "at" ? "bg-white/20" : "bg-white/5"
+        className={`min-h-10 rounded-full px-3 text-ink ${
+          value.kind === "at" ? "bg-fill-3" : "bg-fill"
         }`}
       />
     </div>
