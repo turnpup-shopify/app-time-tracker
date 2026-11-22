@@ -1,5 +1,6 @@
 import { signOut } from "@/auth";
 import { BucketsEditor } from "@/components/BucketsEditor";
+import { ExportPanel } from "@/components/ExportPanel";
 
 export default function SettingsPage() {
   return (
@@ -13,6 +14,9 @@ export default function SettingsPage() {
         Google Calendar
       </h2>
       <p className="glass mt-3 p-5 text-ink-2">Work and Personal calendar sync ships in phase 5.</p>
+
+      <h2 className="mt-10 text-sm font-medium uppercase tracking-wide text-ink-2">Export</h2>
+      <ExportPanel />
 
       <form
         className="mt-10"

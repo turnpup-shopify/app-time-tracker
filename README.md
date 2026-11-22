@@ -2,7 +2,7 @@
 
 Phone first time tracker. Log a block of time in two taps and see where every day went.
 
-The full spec lives in the "Time Tracker App Spec" doc. Phases 1 to 3 are done. Core logging, glass UI and motion, then the timer and offline logging.
+The full spec lives in the "Time Tracker App Spec" doc. Phases 1 to 4 are done. Core logging, glass UI and motion, the timer and offline logging, then daily reports.
 
 ## What ships in Phase 1
 
@@ -34,6 +34,16 @@ Timer, Reports, and Calendar show a "ships in phase N" card for now.
 - Today shows a "Timer running" pill and grows the ring while it runs
 - Taps made offline are saved on the phone with a "Saved offline" badge. They sync on reconnect, on app open, and every 15 seconds. Client ids stop duplicates
 
+## Phase 4. Reports
+
+- Day view. Swipe or tap arrows to move day by day, or jump to any date. Neighbor days load in the background so a swipe is instant
+- Total tracked with a Work vs Life split, a bucket breakdown with percent of tracked time, and a timeline
+- Gaps over 30 minutes show as "Untracked". Tap one to fill it with a bucket
+- Overlapping entries get a warning label. Calendar entries get a calendar icon
+- Week and Month views. Stacked bar per day, totals, daily average, and change vs the previous period. Tap a bar to open that day
+- Totals are computed in Postgres in your time zone. Days break at local midnight, entries that cross midnight are split, and DST days count real elapsed time
+- Export in Settings. CSV for any date range and a JSON backup of everything
+
 ## Tests
 
 | Spec ID | Where |
@@ -44,6 +54,8 @@ Timer, Reports, and Calendar show a "ships in phase N" card for now.
 | T22 | `tests/unit/security.test.ts` and `tests/e2e/today.spec.ts` |
 | T05 to T07 | `tests/unit/timer.test.ts` and `tests/e2e/timer.spec.ts` |
 | T08 | `tests/e2e/timer.spec.ts` |
+| T09, T10, T19 | `tests/unit/reports.test.ts` and `tests/e2e/reports.spec.ts` |
+| T20 | `tests/e2e/reports.spec.ts` (Chrome Slow 4G profile) |
 | T24, T25 | `tests/e2e/design.spec.ts` |
 
 Unit and API tests run against a real Postgres (PGlite, in memory) with the real migrations.

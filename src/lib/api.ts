@@ -6,6 +6,8 @@ import type { Db } from "@/db";
 import { handle, json } from "./http";
 import * as svc from "./service";
 import * as timer from "./timer";
+import * as reports from "./reports";
+import * as exportLib from "./export";
 import {
   bucketCreateSchema,
   bucketPatchSchema,
@@ -78,3 +80,44 @@ export const startTimer = (db: Db, userId: string, body: unknown, now = new Date
 
 export const stopTimer = (db: Db, userId: string, now = new Date()) =>
   handle(async () => json(await timer.stopTimer(db, userId, now)));
+
+export const dayReport = (db: Db, userId: string, url: URL, now = new Date()) =>
+  handle(async () => {
+    const date = reports.assertDate(url.searchParams.get("date"));
+    const tz = reports.assertTz(url.searchParams.get("tz"));
+    return json(await reports.dayReport(db, userId, date, tz, now));
+  });
+
+export const rangeReport = (db: Db, userId: string, url: URL, now = new Date()) =>
+  handle(async () => {
+    const from = reports.assertDate(url.searchParams.get("from"), "from");
+    const to = reports.assertDate(url.searchParams.get("to"), "to");
+    const tz = reports.assertTz(url.searchParams.get("tz"));
+    return json(await reports.rangeReport(db, userId, from, to, tz, now));
+  });
+
+export const exportCsv = (db: Db, userId: string, url: URL) =>
+  handle(async () => {
+    const from = reports.assertDate(url.searchParams.get("from"), "from");
+    const to = reports.assertDate(url.searchParams.get("to"), "to");
+    const tz = reports.assertTz(url.searchParams.get("tz"));
+    if (reports.daysBetween(from, to) < 0) return json({ error: "to must be on or after from" }, 400);
+    const body = await exportLib.entriesCsv(db, userId, from, to, tz);
+    return new Response(body, {
+      headers: {
+        "content-type": "text/csv; charset=utf-8",
+        "content-disposition": `attachment; filename="time-${from}-to-${to}.csv"`,
+      },
+    });
+  });
+
+export const exportJson = (db: Db, userId: string, now = new Date()) =>
+  handle(async () => {
+    const data = await exportLib.jsonBackup(db, userId, now);
+    return new Response(JSON.stringify(data, null, 2), {
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "content-disposition": `attachment; filename="time-backup-${now.toISOString().slice(0, 10)}.json"`,
+      },
+    });
+  });

@@ -1,10 +1,14 @@
-export default function ReportsPage() {
-  return (
-    <section className="pt-6">
-      <h1 className="text-[28px] font-semibold">Reports</h1>
-      <p className="glass mt-6 p-5 text-ink-2">
-        Daily, weekly, and monthly reports ship in phase 4. Today&apos;s timeline is on the Today tab.
-      </p>
-    </section>
-  );
+import { ReportsView, type View } from "@/components/ReportsView";
+
+const VIEWS: View[] = ["day", "week", "month"];
+
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; date?: string }>;
+}) {
+  const { view, date } = await searchParams;
+  const initialView = VIEWS.includes(view as View) ? (view as View) : "day";
+  const initialDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
+  return <ReportsView initialView={initialView} initialDate={initialDate} />;
 }

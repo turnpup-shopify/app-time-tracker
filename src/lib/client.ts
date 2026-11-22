@@ -38,6 +38,31 @@ const parseStop = (r: RawStop): StopResult =>
 
 type RawEntry = Omit<ClientEntry, "startAt" | "endAt"> & { startAt: string; endAt: string | null };
 
+export type DayReport = {
+  date: string;
+  dayMinutes: number;
+  total: number;
+  buckets: { bucketId: string; minutes: number }[];
+  entries: ClientEntry[];
+  gaps: { startAt: Date; endAt: Date; minutes: number }[];
+  overlaps: string[];
+};
+type RawDayReport = Omit<DayReport, "entries" | "gaps"> & {
+  entries: RawEntry[];
+  gaps: { startAt: string; endAt: string; minutes: number }[];
+};
+
+export type RangeReport = {
+  from: string;
+  to: string;
+  total: number;
+  previousTotal: number;
+  days: { date: string; total: number; buckets: Record<string, number> }[];
+  buckets: { bucketId: string; total: number; dailyAverage: number; previous: number; change: number }[];
+};
+
+export const userTz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -124,6 +149,16 @@ export const api = {
       body: JSON.stringify({ bucketId, clientId }),
     }).then((r) => ({ timer: parseEntry(r.timer), stopped: parseStop(r.stopped) })),
   stopTimer: () => call<RawStop>("/api/timer/stop", { method: "POST" }).then(parseStop),
+  dayReport: (date: string, tz: string) =>
+    call<RawDayReport>(`/api/reports/day?date=${date}&tz=${encodeURIComponent(tz)}`).then(
+      (r): DayReport => ({
+        ...r,
+        entries: r.entries.map(parseEntry),
+        gaps: r.gaps.map((g) => ({ ...g, startAt: new Date(g.startAt), endAt: new Date(g.endAt) })),
+      }),
+    ),
+  rangeReport: (from: string, to: string, tz: string) =>
+    call<RangeReport>(`/api/reports/range?from=${from}&to=${to}&tz=${encodeURIComponent(tz)}`),
   restoreEntry: (id: string) =>
     call<{ entry: RawEntry }>(`/api/entries/${id}/restore`, { method: "POST" }).then((r) =>
       parseEntry(r.entry),
