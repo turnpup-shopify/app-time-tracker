@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRollingNumber } from "@/lib/motion";
-import { formatMinutes } from "@/lib/time";
+import { DAY_START_HOUR, DAY_TARGET_MIN as TARGET_MIN } from "@/lib/defaults";
+import { formatMinutes, upToLabel } from "@/lib/time";
 
-const TARGET_MIN = 16 * 60;
 const R = 70;
 const C = 2 * Math.PI * R;
 
@@ -30,7 +30,7 @@ export function DayRing({ slices }: { slices: { color: string; minutes: number; 
       id="day-ring"
       className="relative mx-auto h-48 w-48"
       role="img"
-      aria-label={`${formatMinutes(total)} tracked today`}
+      aria-label={`${formatMinutes(total)} tracked today. Counting from 8 AM, that covers up to ${upToLabel(total, DAY_START_HOUR)}`}
     >
       <svg viewBox="0 0 160 160" className="h-full w-full -rotate-90">
         <circle cx="80" cy="80" r={R} fill="none" stroke="var(--color-fill-2)" strokeWidth="14" />
@@ -56,7 +56,10 @@ export function DayRing({ slices }: { slices: { color: string; minutes: number; 
         <span data-testid="day-total" data-total={total} className="tabular text-[28px] font-semibold">
           {formatMinutes(shown)}
         </span>
-        <span className="text-xs text-ink-2">of 16h day</span>
+        <span data-testid="day-upto" className="mt-0.5 text-sm font-medium">
+          up to {upToLabel(shown, DAY_START_HOUR)}
+        </span>
+        <span className="text-xs text-ink-2">from 8 AM · 16h day</span>
       </div>
     </div>
   );

@@ -161,3 +161,15 @@ describe("editing", () => {
     expect(await svc.listEntries(db, user.userId, from, to)).toHaveLength(1);
   });
 });
+
+describe("up to label", () => {
+  it("counts logged time forward from 8 AM", async () => {
+    const { upToLabel } = await import("@/lib/time");
+    expect(upToLabel(0, 8)).toBe("8:00 AM");
+    expect(upToLabel(30, 8)).toBe("8:30 AM");
+    expect(upToLabel(4 * 60, 8)).toBe("12:00 PM");
+    expect(upToLabel(750, 8)).toBe("8:30 PM");
+    expect(upToLabel(16 * 60, 8)).toBe("12:00 AM");
+    expect(upToLabel(17 * 60 + 5, 8)).toBe("1:05 AM");
+  });
+});

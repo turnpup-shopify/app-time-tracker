@@ -28,6 +28,7 @@ test("T01 quick log updates ring, total, timeline, and shows a toast", async ({ 
 
   await expect(page.getByRole("status")).toContainText("Nice. 30m of Health logged.");
   await expect(page.getByTestId("day-total")).toHaveText("30m");
+  await expect(page.getByTestId("day-upto")).toHaveText("up to 8:30 AM");
   const row = page.getByTestId("timeline-row");
   await expect(row).toHaveCount(1);
 
