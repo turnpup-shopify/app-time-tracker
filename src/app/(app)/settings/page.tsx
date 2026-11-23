@@ -1,11 +1,13 @@
 import { signOut } from "@/auth";
 import { BucketsEditor } from "@/components/BucketsEditor";
 import { ExportPanel } from "@/components/ExportPanel";
+import { BackHome } from "@/components/BackHome";
 
 export default function SettingsPage() {
   return (
     <section className="mx-auto max-w-md pt-6">
-      <h1 className="text-[28px] font-semibold">Settings</h1>
+      <BackHome />
+      <h1 className="mt-3 text-[28px] font-semibold">Settings</h1>
 
       <h2 className="mt-8 text-sm font-medium uppercase tracking-wide text-ink-2">Buckets</h2>
       <BucketsEditor />

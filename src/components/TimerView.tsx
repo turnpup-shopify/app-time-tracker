@@ -5,6 +5,7 @@ import { api, fmtClock, haptic, newClientId, type ClientBucket, type ClientEntry
 import { formatMinutes } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
 import { Toast, type ToastState } from "./Toast";
+import { BackHome } from "@/components/BackHome";
 
 const minutesOf = (e: ClientEntry) =>
   e.endAt ? Math.round((e.endAt.getTime() - e.startAt.getTime()) / 60_000) : 0;
@@ -107,7 +108,8 @@ export function TimerView() {
 
   return (
     <section className="mx-auto max-w-md pt-4">
-      <h1 className="mb-6 text-[28px] font-semibold">Timer</h1>
+      <BackHome />
+      <h1 className="mt-3 mb-6 text-[28px] font-semibold">Timer</h1>
 
       {timer ? (
         <div className="glass p-6 text-center" style={{ boxShadow: `inset 0 4px 0 ${running?.color ?? "#888"}` }}>

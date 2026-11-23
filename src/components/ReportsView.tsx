@@ -23,6 +23,7 @@ import {
 } from "@/lib/dates";
 import { formatMinutes } from "@/lib/time";
 import { Toast, type ToastState } from "./Toast";
+import { BackHome } from "@/components/BackHome";
 
 export type View = "day" | "week" | "month";
 
@@ -156,7 +157,8 @@ export function ReportsView({ initialView, initialDate }: { initialView: View; i
         if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx > 0 ? -1 : 1);
       }}
     >
-      <h1 className="text-[28px] font-semibold">Reports</h1>
+      <BackHome />
+      <h1 className="mt-3 text-[28px] font-semibold">Reports</h1>
 
       <div role="tablist" aria-label="Period" className="glass mt-4 grid grid-cols-3 gap-1 p-1">
         {(["day", "week", "month"] as const).map((v) => (
