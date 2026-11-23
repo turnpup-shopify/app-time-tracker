@@ -66,3 +66,24 @@ test("an open card takes a custom duration", async ({ page }) => {
   await expect(page.getByRole("status")).toContainText("1h 20m of Health logged");
   await expect(page.getByTestId("day-total")).toHaveText("1h 20m");
 });
+
+test("opening a card puts the cursor in its time box, and Enter logs", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("bucket-Work Personal").getByRole("button", { name: /Work Personal/ }).click();
+  const box = page.getByLabel("Custom duration for Work Personal");
+  await expect(box).toBeFocused();
+  await page.keyboard.type("50");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("status")).toContainText("50m of Work Personal logged");
+  await expect(page.getByTestId("day-total")).toHaveText("50m");
+});
+
+test("Enter in search opens the top card with the cursor ready", async ({ page }) => {
+  await open(page);
+  await search(page).fill("hea");
+  await search(page).press("Enter");
+  await expect(page.getByLabel("Custom duration for Health")).toBeFocused();
+  await page.keyboard.type("1h");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("status")).toContainText("1h of Health logged");
+});

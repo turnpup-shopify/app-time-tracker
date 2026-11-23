@@ -528,7 +528,11 @@ export function TodayView() {
                         setCustom(e.target.value);
                         setCustomError(null);
                       }}
-                      placeholder="Other, like 45m"
+                      // Opening a card puts the cursor here. Type a time, press Enter.
+                      autoFocus
+                      inputMode="text"
+                      enterKeyHint="done"
+                      placeholder="Type a time, like 45m"
                       aria-label={`Custom duration for ${b.name}`}
                       aria-invalid={!!customError}
                       autoComplete="off"
