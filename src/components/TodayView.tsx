@@ -16,6 +16,7 @@ import {
   type ClientEntry,
 } from "@/lib/client";
 import { flyDot } from "@/lib/motion";
+import { parseDuration, parseQuery, searchBuckets } from "@/lib/quickEntry";
 import { dequeue, enqueue, readQueue, type QueuedEntry } from "@/lib/offline";
 import { useNow } from "@/lib/useNow";
 import { DayRing } from "./DayRing";
@@ -53,6 +54,10 @@ export function TodayView() {
   const [pulse, setPulse] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
   const [editing, setEditing] = useState<ClientEntry | null>(null);
+  const [query, setQuery] = useState("");
+  const [custom, setCustom] = useState("");
+  const [customError, setCustomError] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const lastTap = useRef<{ key: string; at: number } | null>(null);
   const toastId = useRef(0);
   const flushing = useRef(false);
@@ -151,6 +156,21 @@ export function TodayView() {
     [buckets],
   );
   const active = useMemo(() => (buckets ?? []).filter((b) => !b.archivedAt), [buckets]);
+  const parsed = useMemo(() => parseQuery(query), [query]);
+  const shown = useMemo(() => searchBuckets(active, parsed.term), [active, parsed.term]);
+  const top = query.trim() ? (shown[0] ?? null) : null;
+
+  // "/" jumps to the search box from anywhere on the page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key !== "/" || t.closest("input, textarea, select, [contenteditable]")) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // A running timer grows the ring. Recomputing once a minute is enough.
   const minuteTick = running && now ? Math.floor(now / 60_000) : 0;
@@ -271,6 +291,9 @@ export function TodayView() {
     setNote("");
     setNoteOpen(false);
     setEndedAt({ kind: "now" });
+    setQuery("");
+    setCustom("");
+    setCustomError(null);
     void save(bucket, minutes, range, newClientId(), noteText);
   }
 
@@ -384,11 +407,51 @@ export function TodayView() {
       <DayRing slices={slices} />
 
       {entries.length === 0 && (
-        <p className="mt-4 text-center text-ink-2">Tap a bucket to log time</p>
+        <p className="mt-4 text-center text-ink-2">Tap a bucket, or type like health 45m</p>
       )}
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        {active.map((b) => {
+      <div className="mt-6">
+        <input
+          ref={searchRef}
+          type="search"
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setQuery("");
+              return;
+            }
+            if (e.key !== "Enter" || !top) return;
+            e.preventDefault();
+            if (parsed.minutes) {
+              const card = document.querySelector(`[data-testid="bucket-${CSS.escape(top.name)}"]`) ?? e.currentTarget;
+              log(top, parsed.minutes, e.timeStamp, card);
+              searchRef.current?.focus();
+            } else {
+              setExpanded(top.id);
+            }
+          }}
+          placeholder="Search buckets. Add a time like 45m"
+          aria-label="Search buckets, optionally with a duration like 45m"
+          aria-describedby="search-hint"
+          enterKeyHint={parsed.minutes ? "done" : "search"}
+          autoComplete="off"
+          className="glass min-h-12 w-full px-4 text-ink placeholder:text-ink-2"
+        />
+        <p id="search-hint" data-testid="search-hint" className="mt-2 min-h-5 px-1 text-sm text-ink-2" aria-live="polite">
+          {!query.trim()
+            ? ""
+            : !top
+              ? `No bucket matches "${parsed.term}"`
+              : parsed.minutes
+                ? `Enter logs ${formatMinutes(parsed.minutes)} to ${top.name}. Or tap any bucket.`
+                : `Enter opens ${top.name}. Add a time like 30m to log it.`}
+        </p>
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-3">
+        {shown.map((b) => {
           const isOpen = expanded === b.id;
           const mins = slices.find((s) => s.id === b.id)?.minutes ?? 0;
           return (
@@ -397,13 +460,21 @@ export function TodayView() {
               data-testid={`bucket-${b.name}`}
               className={`glass overflow-hidden transition-transform ${
                 isOpen ? "col-span-2" : ""
-              } ${pulse === b.id ? "pulse-once" : ""}`}
+              } ${pulse === b.id ? "pulse-once" : ""} ${top?.id === b.id ? "outline-2 outline-offset-2 outline-ink/60" : ""}`}
               style={{ boxShadow: `inset 4px 0 0 ${b.color}` }}
             >
               <button
                 type="button"
-                aria-expanded={isOpen}
-                onClick={() => setExpanded(isOpen ? null : b.id)}
+                aria-expanded={parsed.minutes ? undefined : isOpen}
+                aria-label={parsed.minutes ? `Log ${formatMinutes(parsed.minutes)} to ${b.name}` : undefined}
+                onClick={(e) => {
+                  if (parsed.minutes) log(b, parsed.minutes, e.timeStamp, e.currentTarget);
+                  else {
+                    setExpanded(isOpen ? null : b.id);
+                    setCustom("");
+                    setCustomError(null);
+                  }
+                }}
                 className="press flex min-h-24 w-full flex-col items-start justify-between p-4 text-left"
               >
                 <span className="flex items-center gap-2 font-medium">
@@ -414,7 +485,14 @@ export function TodayView() {
                   />
                   {b.name}
                 </span>
-                <span className="tabular text-ink-2">{mins ? formatMinutes(mins) : "0m"}</span>
+                <span className="flex w-full items-center justify-between">
+                  <span className="tabular text-ink-2">{mins ? formatMinutes(mins) : "0m"}</span>
+                  {parsed.minutes && (
+                    <span className="rounded-full bg-fill-3 px-2.5 py-0.5 text-sm font-semibold">
+                      +{formatMinutes(parsed.minutes)}
+                    </span>
+                  )}
+                </span>
               </button>
 
               {isOpen && (
@@ -431,6 +509,44 @@ export function TodayView() {
                       </button>
                     ))}
                   </div>
+
+                  <form
+                    className="mt-2 flex gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const m = parseDuration(custom);
+                      if (!m) {
+                        setCustomError("Try 45m, 1h 15m, or 1:15. Up to 24h.");
+                        return;
+                      }
+                      log(b, m, e.timeStamp, e.currentTarget);
+                    }}
+                  >
+                    <input
+                      value={custom}
+                      onChange={(e) => {
+                        setCustom(e.target.value);
+                        setCustomError(null);
+                      }}
+                      placeholder="Other, like 45m"
+                      aria-label={`Custom duration for ${b.name}`}
+                      aria-invalid={!!customError}
+                      autoComplete="off"
+                      className="min-h-12 min-w-0 flex-1 rounded-full border border-glass-border bg-fill px-4 text-ink placeholder:text-ink-2"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!custom.trim()}
+                      className="press min-h-12 rounded-full bg-accent px-5 font-semibold text-on-accent disabled:opacity-50"
+                    >
+                      Log
+                    </button>
+                  </form>
+                  {customError && (
+                    <p role="alert" className="mt-1 px-2 text-sm text-danger">
+                      {customError}
+                    </p>
+                  )}
 
                   <EndedAtPicker value={endedAt} onChange={setEndedAt} />
 
