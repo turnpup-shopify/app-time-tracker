@@ -6,7 +6,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!(await currentUserId())) redirect("/signin");
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md px-4 pb-28 pt-[max(16px,env(safe-area-inset-top))]">
+    <div className="mx-auto min-h-dvh max-w-md px-4 pb-28 lg:max-w-[1400px] lg:px-8 pt-[max(16px,env(safe-area-inset-top))]">
       {children}
       <BottomNav />
     </div>

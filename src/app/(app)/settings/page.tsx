@@ -4,7 +4,7 @@ import { ExportPanel } from "@/components/ExportPanel";
 
 export default function SettingsPage() {
   return (
-    <section className="pt-6">
+    <section className="mx-auto max-w-md pt-6">
       <h1 className="text-[28px] font-semibold">Settings</h1>
 
       <h2 className="mt-8 text-sm font-medium uppercase tracking-wide text-ink-2">Buckets</h2>

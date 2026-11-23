@@ -106,7 +106,7 @@ export function TimerView() {
   const elapsed = timer && now ? now - timer.startAt.getTime() : 0;
 
   return (
-    <section className="pt-4">
+    <section className="mx-auto max-w-md pt-4">
       <h1 className="mb-6 text-[28px] font-semibold">Timer</h1>
 
       {timer ? (

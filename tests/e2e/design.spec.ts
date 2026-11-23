@@ -123,3 +123,21 @@ test("the app can be installed", async ({ page, request }) => {
   await expect(page.locator('link[rel="manifest"]')).toHaveCount(1);
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
 });
+
+test.describe("desktop dashboard", () => {
+  test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false });
+
+  test("summary, search, buckets, and timeline all sit at the top of the screen", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("day-upto").waitFor();
+    const top = async (sel: string) => (await page.locator(sel).first().boundingBox())!;
+    const ring = await top("#day-ring");
+    const search = await top('input[type="search"]');
+    const card = await top('[data-testid^="bucket-"]');
+    const timeline = await top("text=Timeline");
+    for (const box of [ring, search, card, timeline]) expect(box.y).toBeLessThan(220);
+    // Three columns, left to right.
+    expect(ring.x).toBeLessThan(search.x);
+    expect(search.x).toBeLessThan(timeline.x);
+  });
+});

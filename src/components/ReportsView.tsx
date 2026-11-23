@@ -141,7 +141,7 @@ export function ReportsView({ initialView, initialDate }: { initialView: View; i
 
   return (
     <section
-      className="pt-4"
+      className="mx-auto max-w-2xl pt-4"
       style={{ touchAction: "pan-y" }}
       onPointerDown={(e) => {
         if (e.pointerType === "mouse") return;

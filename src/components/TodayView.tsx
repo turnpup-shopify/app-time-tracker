@@ -186,6 +186,16 @@ export function TodayView() {
       .map((b) => ({ id: b.id, color: b.color, minutes: per.get(b.id)! }));
   }, [entries, buckets, day, minuteTick]);
 
+  const groupSplit = useMemo(() => {
+    let work = 0;
+    let life = 0;
+    for (const sl of slices) {
+      if (bucketById.get(sl.id)?.group === "work") work += sl.minutes;
+      else life += sl.minutes;
+    }
+    return { work, life };
+  }, [slices, bucketById]);
+
   function resolveEnd(): Date {
     const now = new Date();
     if (endedAt.kind === "ago") return new Date(now.getTime() - endedAt.minutes * 60_000);
@@ -382,8 +392,10 @@ export function TodayView() {
   const sorted = [...entries].sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 
   return (
-    <section className="pt-4">
-      <header className="mb-4 flex items-baseline justify-between">
+    <section className="pt-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-x-6 xl:grid-cols-[300px_minmax(0,1fr)_340px]">
+      {/* Summary. Left column on desktop. */}
+      <div className="lg:col-start-1 lg:row-start-1 xl:sticky xl:top-6">
+      <header className="mb-3 flex items-baseline justify-between">
         <h1 className="text-[28px] font-semibold">Today</h1>
         <span className="text-ink-2">
           {day.from.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
@@ -394,7 +406,7 @@ export function TodayView() {
         <Link
           href="/timer"
           data-testid="running-pill"
-          className="glass press mb-4 flex min-h-12 items-center gap-2 px-4 text-sm"
+          className="glass press mb-3 flex min-h-12 items-center gap-2 px-4 text-sm"
         >
           <span aria-hidden className="h-2.5 w-2.5 animate-pulse rounded-full" style={{ background: bucketById.get(running.bucketId)?.color }} />
           <span className="flex-1">
@@ -404,13 +416,12 @@ export function TodayView() {
         </Link>
       )}
 
-      <DayRing slices={slices} />
+      <DayRing slices={slices} groups={groupSplit} />
+      </div>
 
-      {entries.length === 0 && (
-        <p className="mt-4 text-center text-ink-2">Tap a bucket, or type like health 45m</p>
-      )}
-
-      <div className="mt-6">
+      {/* Search and buckets. Middle column on desktop. */}
+      <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 xl:row-span-1">
+      <div className="mt-4 lg:mt-0">
         <input
           ref={searchRef}
           type="search"
@@ -439,9 +450,11 @@ export function TodayView() {
           autoComplete="off"
           className="glass min-h-12 w-full px-4 text-ink placeholder:text-ink-2"
         />
-        <p id="search-hint" data-testid="search-hint" className="mt-2 min-h-5 px-1 text-sm text-ink-2" aria-live="polite">
+        <p id="search-hint" data-testid="search-hint" className="mt-1.5 min-h-5 px-1 text-sm text-ink-2" aria-live="polite">
           {!query.trim()
-            ? ""
+            ? entries.length === 0
+              ? "Tap a bucket, or type like health 45m"
+              : ""
             : !top
               ? `No bucket matches "${parsed.term}"`
               : parsed.minutes
@@ -450,7 +463,7 @@ export function TodayView() {
         </p>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-3">
+      <div className="mt-1.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
         {shown.map((b) => {
           const isOpen = expanded === b.id;
           const mins = slices.find((s) => s.id === b.id)?.minutes ?? 0;
@@ -459,7 +472,7 @@ export function TodayView() {
               key={b.id}
               data-testid={`bucket-${b.name}`}
               className={`glass overflow-hidden transition-transform ${
-                isOpen ? "col-span-2" : ""
+                isOpen ? "col-span-full" : ""
               } ${pulse === b.id ? "pulse-once" : ""} ${top?.id === b.id ? "outline-2 outline-offset-2 outline-ink/60" : ""}`}
               style={{ boxShadow: `inset 4px 0 0 ${b.color}` }}
             >
@@ -475,7 +488,7 @@ export function TodayView() {
                     setCustomError(null);
                   }
                 }}
-                className="press flex min-h-24 w-full flex-col items-start justify-between p-4 text-left"
+                className="press flex min-h-[76px] w-full flex-col items-start justify-between gap-1.5 px-4 py-3 text-left"
               >
                 <span className="flex items-center gap-2 font-medium">
                   <span
@@ -579,8 +592,11 @@ export function TodayView() {
           );
         })}
       </div>
+      </div>
 
-      <h2 className="mt-8 mb-3 text-sm font-medium uppercase tracking-wide text-ink-2">Timeline</h2>
+      {/* Timeline. Right column on desktop, scrolls on its own. */}
+      <div className="lg:col-start-1 lg:row-start-2 xl:sticky xl:top-6 xl:col-start-3 xl:row-start-1 xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:pr-1">
+      <h2 className="mt-6 mb-3 text-sm font-medium uppercase tracking-wide text-ink-2 xl:mt-0">Timeline</h2>
       <Timeline
         entries={sorted}
         buckets={bucketById}
@@ -593,6 +609,7 @@ export function TodayView() {
           setEditing(e);
         }}
       />
+      </div>
 
       {editing && (
         <EntrySheet
